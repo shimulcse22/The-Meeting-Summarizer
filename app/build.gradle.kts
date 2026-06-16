@@ -98,8 +98,9 @@ dependencies {
     // On-device speech-to-text (Vosk — legacy, currently unused by the active flavors)
     implementation(libs.vosk.android)
 
-    // Whisper native engine — only bundled into the staging flavor.
-    "stagingImplementation"(project(":whisper"))
+    // Whisper native engine — used for file transcription in ALL flavors, and for
+    // live transcription in the staging flavor.
+    implementation(project(":whisper"))
 
     // Tooling
     debugImplementation(libs.androidx.ui.tooling)

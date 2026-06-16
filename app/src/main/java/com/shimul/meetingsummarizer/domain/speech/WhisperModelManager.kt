@@ -9,7 +9,7 @@ import java.net.URL
 
 /**
  * Downloads + stores the Whisper GGML model on first use (offline afterwards).
- * Default: base.en (~142 MB) — a good accuracy/size balance for English.
+ * Shared by the staging live engine and the file transcriber (all flavors).
  */
 class WhisperModelManager(context: Context) {
 

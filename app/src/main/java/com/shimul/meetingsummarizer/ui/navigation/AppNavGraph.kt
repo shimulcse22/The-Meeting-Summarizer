@@ -37,7 +37,14 @@ fun AppNavGraph() {
             )
         }
         composable(Screen.Import.route) {
-            ImportScreen(onBack = { navController.popBackStack() })
+            ImportScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { id ->
+                    navController.navigate(Screen.Detail.createRoute(id)) {
+                        popUpTo(Screen.Import.route) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { navController.popBackStack() })
