@@ -2,6 +2,7 @@ package com.shimul.meetingsummarizer.ui.screens.record
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
@@ -98,6 +99,22 @@ fun RecordScreen(
         hasMicPermission = granted
         permissionDenied = !granted
         if (granted) viewModel.start()
+    }
+
+    // Ask for notification permission once (Android 13+) so the background
+    // recording notification can be shown.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* best effort — recording works regardless */ }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     fun onRecordClick() {

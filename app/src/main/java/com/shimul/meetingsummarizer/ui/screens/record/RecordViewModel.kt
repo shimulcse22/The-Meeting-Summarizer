@@ -1,6 +1,7 @@
 package com.shimul.meetingsummarizer.ui.screens.record
 
 import android.app.Application
+import android.content.Context
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,7 @@ import com.shimul.meetingsummarizer.domain.model.Meeting
 import com.shimul.meetingsummarizer.domain.model.MeetingSource
 import com.shimul.meetingsummarizer.domain.speech.SpeechEngine
 import com.shimul.meetingsummarizer.domain.speech.SpeechEngineFactory
+import com.shimul.meetingsummarizer.recording.RecordingService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +41,8 @@ data class RecordUiState(
 )
 
 class RecordViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val appContext: Context = application
 
     // The engine implementation depends on the active build flavor.
     private val engine: SpeechEngine = SpeechEngineFactory.create(application)
@@ -81,6 +85,9 @@ class RecordViewModel(application: Application) : AndroidViewModel(application) 
                 }
                 startTimer()
 
+                // Keep recording alive in the background (mic + notification).
+                RecordingService.start(appContext, paused = false)
+
                 // 3) Engine owns audio capture; it pushes cumulative transcript updates.
                 engine.start(
                     language = _state.value.language,
@@ -107,6 +114,7 @@ class RecordViewModel(application: Application) : AndroidViewModel(application) 
         timerJob?.cancel()
         accumulatedMs += SystemClock.elapsedRealtime() - segmentStartedAt
         _state.update { it.copy(isPaused = true, elapsedMs = accumulatedMs) }
+        RecordingService.update(appContext, paused = true)
     }
 
     /** Resume a paused session. */
@@ -115,12 +123,14 @@ class RecordViewModel(application: Application) : AndroidViewModel(application) 
         engine.resume()
         _state.update { it.copy(isPaused = false) }
         startTimer()
+        RecordingService.update(appContext, paused = false)
     }
 
     fun stop() {
         if (!_state.value.isRecording) return
         engine.stop()
         timerJob?.cancel()
+        RecordingService.stop(appContext)
         _state.update { it.copy(isRecording = false, isPaused = false, isSaving = true) }
         viewModelScope.launch { finalizeAndSave() }
     }
@@ -184,7 +194,14 @@ class RecordViewModel(application: Application) : AndroidViewModel(application) 
     private fun onEngineError(message: String) {
         engine.stop()
         timerJob?.cancel()
-        _state.update { it.copy(isRecording = false, error = message) }
+        RecordingService.stop(appContext)
+        // If recording fails mid-session, still save whatever was transcribed.
+        if (_state.value.transcript.isNotBlank()) {
+            _state.update { it.copy(isRecording = false, isPaused = false, isSaving = true, error = message) }
+            viewModelScope.launch { finalizeAndSave() }
+        } else {
+            _state.update { it.copy(isRecording = false, isPaused = false, error = message) }
+        }
     }
 
     private fun startTimer() {
@@ -203,6 +220,7 @@ class RecordViewModel(application: Application) : AndroidViewModel(application) 
         engine.release()
         timerJob?.cancel()
         sessionJob?.cancel()
+        RecordingService.stop(appContext)
         super.onCleared()
     }
 
