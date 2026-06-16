@@ -96,8 +96,20 @@ object ImportTranscriptionController {
                 repository.save(meeting)
                 _state.value = ImportState.Done(meeting.id)
             } catch (t: Throwable) {
-                _state.value = ImportState.Failed(t.message ?: "Couldn't transcribe the file.")
+                _state.value = ImportState.Failed(friendlyError(t))
             }
         }
+    }
+
+    private fun friendlyError(t: Throwable): String = when {
+        t is android.media.MediaCodec.CodecException ->
+            "This file's audio couldn't be decoded — it may be corrupt or in an " +
+                "unsupported format. Please pick a different file."
+        t is SecurityException ->
+            "Can't access this file anymore. Please choose it again."
+        t is OutOfMemoryError ->
+            "This file is too large to process on this device."
+        !t.message.isNullOrBlank() -> t.message!!
+        else -> "Couldn't transcribe this file. Please pick a different audio or video file."
     }
 }

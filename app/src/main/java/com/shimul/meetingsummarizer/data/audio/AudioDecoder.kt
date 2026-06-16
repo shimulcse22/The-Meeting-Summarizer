@@ -32,7 +32,12 @@ object AudioDecoder {
         onChunk: suspend (FloatArray) -> Unit
     ) = withContext(Dispatchers.IO) {
         val extractor = MediaExtractor()
-        extractor.setDataSource(context, uri, null)
+        try {
+            extractor.setDataSource(context, uri, null)
+        } catch (e: Exception) {
+            extractor.release()
+            throw IllegalArgumentException("Couldn't open this file — it may be corrupt or unreadable.")
+        }
 
         val trackIndex = (0 until extractor.trackCount).firstOrNull { i ->
             extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)
@@ -55,9 +60,18 @@ object AudioDecoder {
             inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE) else TARGET_RATE
         var resampler = LinearResampler(sampleRate, TARGET_RATE)
 
-        val codec = MediaCodec.createDecoderByType(mime)
-        codec.configure(inputFormat, null, null, 0)
-        codec.start()
+        val codec = try {
+            MediaCodec.createDecoderByType(mime).apply {
+                configure(inputFormat, null, null, 0)
+                start()
+            }
+        } catch (e: Exception) {
+            extractor.release()
+            throw IllegalArgumentException(
+                "This file's audio format isn't supported on this device. " +
+                    "Try a different file (e.g. MP3, M4A, or MP4)."
+            )
+        }
 
         val windowSize = TARGET_RATE * chunkSeconds
         val window = FloatArray(windowSize)
