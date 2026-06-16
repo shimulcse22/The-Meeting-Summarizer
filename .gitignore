@@ -9,3 +9,8 @@
 .cxx
 local.properties
 /app/build
+/whisper/.cxx
+/whisper/build
+
+# Cloned native sources (large; fetched via git clone, not tracked here)
+/whisper.cpp

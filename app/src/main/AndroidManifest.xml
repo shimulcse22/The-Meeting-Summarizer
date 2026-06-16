@@ -11,6 +11,13 @@
     <!-- One-time model downloads only -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Allows discovering the system speech recognition service (Google STT flavor). -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:name=".MeetingApp"
         android:allowBackup="true"

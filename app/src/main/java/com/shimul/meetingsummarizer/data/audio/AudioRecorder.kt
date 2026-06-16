@@ -35,8 +35,10 @@ class AudioRecorder {
     suspend fun record(onChunk: (ShortArray, Int) -> Unit) = withContext(Dispatchers.IO) {
         val minBuffer = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
         val bufferSize = if (minBuffer > 0) minBuffer * 2 else SAMPLE_RATE
+        // VOICE_RECOGNITION is tuned for speech (less aggressive noise/gain
+        // processing than MIC), which Vosk recognizes more accurately.
         val audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.MIC,
+            MediaRecorder.AudioSource.VOICE_RECOGNITION,
             SAMPLE_RATE,
             CHANNEL,
             ENCODING,

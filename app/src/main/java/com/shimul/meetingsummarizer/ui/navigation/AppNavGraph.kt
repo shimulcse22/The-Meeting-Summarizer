@@ -26,7 +26,15 @@ fun AppNavGraph() {
             )
         }
         composable(Screen.Record.route) {
-            RecordScreen(onBack = { navController.popBackStack() })
+            RecordScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { id ->
+                    navController.navigate(Screen.Detail.createRoute(id)) {
+                        // Back from detail should go Home, not back to Record.
+                        popUpTo(Screen.Record.route) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(Screen.Import.route) {
             ImportScreen(onBack = { navController.popBackStack() })

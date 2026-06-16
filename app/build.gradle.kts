@@ -28,6 +28,25 @@ android {
         }
     }
 
+    // Each flavor ships a different speech engine (see src/<flavor>/.../SpeechEngineFactory.kt).
+    flavorDimensions += "engine"
+    productFlavors {
+        // QA build → Google on-device SpeechRecognizer.
+        create("qa") {
+            dimension = "engine"
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            resValue("string", "app_name", "Meeting Summarizer QA")
+        }
+        // Staging build → Whisper (whisper.cpp).
+        create("staging") {
+            dimension = "engine"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            resValue("string", "app_name", "Meeting Summarizer Staging")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -75,6 +94,12 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // On-device speech-to-text (Vosk — legacy, currently unused by the active flavors)
+    implementation(libs.vosk.android)
+
+    // Whisper native engine — only bundled into the staging flavor.
+    "stagingImplementation"(project(":whisper"))
 
     // Tooling
     debugImplementation(libs.androidx.ui.tooling)

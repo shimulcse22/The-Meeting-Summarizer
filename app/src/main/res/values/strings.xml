@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Meeting Summarizer</string>
+    <!-- app_name is provided per build flavor (see app/build.gradle.kts resValue). -->
+    <string name="record">Record</string>
 </resources>
